@@ -15,7 +15,7 @@ import { CardsState } from "./cardSlice";
 const corsProxy = "https://thingproxy.freeboard.io/fetch/";
 const searchURL = "http://localhost:8010/proxy/v1/search/request?q=";
 
-export const CACHE_KEY = "SETS_RARIES_CARDTYPES_PRODUCTYPES";
+export const CACHE_KEY = "SETS_RARIES_CARDTYPES_PRODUCTTYPES";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const emptyBody = {

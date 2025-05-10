@@ -1,8 +1,6 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "../../app/store";
-import { addCardsToFirebase, deleteCardFromFirebase } from "./firebaseAPI";
-import { createDispatchHook } from "react-redux";
 
 // Define a type for the slice state
 export interface CardsState {
@@ -70,14 +68,6 @@ export const cardsSlice = createSlice({
         state[index].quantity = 0;
       }
     },
-    addCardsToDb: (
-      _,
-      action: PayloadAction<{ rows: CardsState[]; userId: string }>
-    ) => {
-      action.payload.rows.forEach((payloadValue: CardsState) => {
-        addCardsToFirebase(payloadValue, action.payload.userId);
-      });
-    },
     deleteCard: (state, action: PayloadAction<CardsState>) => {
       let index = state.findIndex(
         (card: CardsState) =>
@@ -101,7 +91,6 @@ export const cardsSlice = createSlice({
 export const {
   addCard,
   addCards,
-  addCardsToDb,
   deleteCard,
   increaseQuantity,
   decreaseQuantity,
