@@ -2,6 +2,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "../../app/store";
 import { addCardsToFirebase, deleteCardFromFirebase } from "./firebaseAPI";
+import { createDispatchHook } from "react-redux";
 
 // Define a type for the slice state
 export interface CardsState {
@@ -11,34 +12,8 @@ export interface CardsState {
   setName: string;
   price: number;
   quantity: number;
-  number: number;
+  number: string;
 }
-
-export const toCardsState = (rowModel: any): CardsState => {
-  return {
-    id: rowModel.id,
-    cardName: rowModel.cardName,
-    setName: rowModel.setName,
-    price: rowModel.price,
-    rarity: rowModel.rarity,
-    quantity: rowModel.quantity,
-    number: rowModel.number,
-  };
-};
-
-export const toCardsStates = (rowModel: any[]): CardsState[] => {
-  return rowModel.map((data) => {
-    return {
-      id: data.id,
-      cardName: data.cardName,
-      setName: data.setName,
-      price: data.price,
-      rarity: data.rarity,
-      quantity: data.quantity,
-      number: data.number,
-    };
-  });
-};
 
 // Define the initial state using that type
 const initialState: CardsState[] = [];
@@ -48,43 +23,90 @@ export const cardsSlice = createSlice({
   // `createSlice` will infer the state type from the `initialState` argument
   initialState,
   reducers: {
-    addCard: (state, action: PayloadAction<any>) => {
-      state.push(toCardsState(action.payload));
+    addCard: (state, action: PayloadAction<CardsState>) => {
+      let index = state.findIndex((value: CardsState) => {
+        return action.payload.id === value.id;
+      });
+      if (index === -1) {
+        state.push(action.payload);
+      } else {
+        state[index].quantity += action.payload.quantity;
+      }
     },
-    addCards: (state, action: PayloadAction<any[]>) => {
-      toCardsStates(action.payload).forEach((payloadValue: CardsState) => {
-        if (
-          state.findIndex((value: CardsState) => {
-            return payloadValue.id === value.id;
-          }) === -1
-        ) {
+    addCards: (state, action: PayloadAction<CardsState[]>) => {
+      action.payload.forEach((payloadValue: CardsState) => {
+        let index = state.findIndex((value: CardsState) => {
+          return payloadValue.id === value.id;
+        });
+        if (index === -1) {
           state.push(payloadValue);
+        } else {
+          state[index].quantity += payloadValue.quantity;
         }
       });
     },
+    increaseQuantity: (state, action: PayloadAction<number>) => {
+      console.log("Increasing quantity for ", action.payload);
+      let index = state.findIndex((card: CardsState) => {
+        return card.id == action.payload;
+      });
+      if (index != -1) {
+        state[index].quantity++;
+      }
+    },
+    decreaseQuantity: (state, action: PayloadAction<number>) => {
+      let index = state.findIndex((card: CardsState) => {
+        return card.id == action.payload;
+      });
+      if (index != -1 && state[index].quantity != 0) {
+        state[index].quantity--;
+      }
+    },
+    clearQuantity: (state, action: PayloadAction<number>) => {
+      let index = state.findIndex((card: CardsState) => {
+        return card.id == action.payload;
+      });
+      if (index != -1 && state[index].quantity != 0) {
+        state[index].quantity = 0;
+      }
+    },
     addCardsToDb: (
       _,
-      action: PayloadAction<{ rows: any[]; userId: string }>
+      action: PayloadAction<{ rows: CardsState[]; userId: string }>
     ) => {
-      toCardsStates(action.payload.rows).forEach((payloadValue: CardsState) => {
-        addCardsToFirebase(toCardsState(payloadValue), action.payload.userId);
+      action.payload.rows.forEach((payloadValue: CardsState) => {
+        addCardsToFirebase(payloadValue, action.payload.userId);
       });
     },
-    deleteCard: (
-      state,
-      action: PayloadAction<{ rowId: any; userId: string }>
-    ) => {
-      let id = Number(action.payload.rowId);
-      deleteCardFromFirebase(String(id), action.payload.userId);
+    deleteCard: (state, action: PayloadAction<CardsState>) => {
+      let index = state.findIndex(
+        (card: CardsState) =>
+          card.number === action.payload.number &&
+          card.rarity === action.payload.rarity
+      );
 
-      state = state.filter((value) => value.id !== id);
-      state = Object.assign([], state);
+      if (index !== -1) {
+        return state.filter(
+          (card) =>
+            !(
+              card.number == action.payload.number &&
+              card.rarity == action.payload.rarity
+            )
+        );
+      }
     },
   },
 });
 
-export const { addCard, addCards, addCardsToDb, deleteCard } =
-  cardsSlice.actions;
+export const {
+  addCard,
+  addCards,
+  addCardsToDb,
+  deleteCard,
+  increaseQuantity,
+  decreaseQuantity,
+  clearQuantity,
+} = cardsSlice.actions;
 
 // Other code such as selectors can use the imported `RootState` type
 export const selectCards = (state: RootState) => state.ownedCards;

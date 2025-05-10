@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   Aggregations,
   CardType,
+  ResultResult,
   TCGPlayer,
   TCGPlayerResult,
 } from "../../models/TCGPlayer";
@@ -9,9 +10,13 @@ import { Action } from "@reduxjs/toolkit";
 import { REHYDRATE } from "redux-persist";
 import { RootState } from "../../app/store";
 import { TCGPlayerBody } from "../../models/TCGPlayerBody";
+import { CardsState } from "./cardSlice";
 
 const corsProxy = "https://thingproxy.freeboard.io/fetch/";
-const searchURL = "https://mp-search-api.tcgplayer.com/v1/search/request?q=";
+const searchURL = "http://localhost:8010/proxy/v1/search/request?q=";
+
+export const CACHE_KEY = "SETS_RARIES_CARDTYPES_PRODUCTYPES";
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const emptyBody = {
   algorithm: "sales_exp_fields_experiment",
@@ -105,7 +110,7 @@ const constructBody = (aggregations: GetAggregations): TCGPlayerBody => {
     range: {},
     match: {},
   };
-  body.size = 24;
+  body.size = 50;
 
   if (aggregations.setName.length !== 0) {
     body.filters.term.setName = aggregations.setName;
@@ -146,23 +151,50 @@ export interface GetAggregations {
   cardType: string[];
 }
 
+export interface AggregationCache {
+  aggregations: Aggregations;
+  timestamp: number;
+}
+
 export const tcgPlayerApi = createApi({
   reducerPath: "tcgPlayerApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `${corsProxy}${searchURL}` }),
-  extractRehydrationInfo(action, { reducerPath }): any {
-    if (isHydrateAction(action)) {
-      if (action.key === "root" && action.payload !== undefined) {
-        return action.payload[reducerPath];
-      }
-    }
-  },
+  baseQuery: fetchBaseQuery({ baseUrl: `${searchURL}` }),
   endpoints: (builder) => ({
-    getAggregations: builder.query<Aggregations, GetAggregations>({
+    getAggregations: builder.query<Aggregations, void>({
       query: (aggregations) => ({
         url: "",
         method: "POST",
-        body: constructBody(aggregations),
+        body: emptyBody,
       }),
+      async onCacheEntryAdded(arg, api) {
+        try {
+          await api.cacheDataLoaded;
+
+          const cached = localStorage.getItem(CACHE_KEY);
+          const now = Date.now();
+
+          if (cached) {
+            const parsed = JSON.parse(cached) as AggregationCache;
+            const now = Date.now();
+
+            if (now - parsed.timestamp > ONE_DAY_MS) {
+              api.updateCachedData(() => parsed.aggregations);
+            }
+          }
+
+          const entry = api.getCacheEntry();
+          if (entry?.data) {
+            localStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify({ data: entry.data, timestamp: now })
+            );
+          }
+
+          await api.cacheEntryRemoved;
+        } catch (e) {
+          console.warn("Error loading data from local storage", e);
+        }
+      },
       transformResponse: (response: TCGPlayer): Aggregations => {
         let aggregations = response.results[0].aggregations;
         aggregations.cardType.sort(sortFunc);
@@ -173,11 +205,44 @@ export const tcgPlayerApi = createApi({
         return aggregations;
       },
     }),
+    getCardsFromSet: builder.query<CardsState[], string>({
+      query: (setName) => ({
+        url: "",
+        method: "POST",
+        body: constructBody({
+          setName: [setName],
+          cardType: [],
+          productTypeName: [],
+          rarityName: [],
+        }),
+      }),
+      transformResponse: (response: TCGPlayer): CardsState[] => {
+        let results = response.results[0].results;
+
+        return results.map(
+          (value: ResultResult) =>
+            ({
+              cardName: value.productName,
+              id: value.productId,
+              number: value.customAttributes.number,
+              price: value.marketPrice,
+              rarity: value.rarityName,
+              setName: value.setName,
+              quantity: 0,
+            } as CardsState)
+        );
+      },
+    }),
     getSetsRaritiesAndCardTypes: builder.query<CardType, string>({
       query: (cardName: string) => cardName,
     }),
   }),
 });
 
-export const { useGetAggregationsQuery, useGetSetsRaritiesAndCardTypesQuery } =
-  tcgPlayerApi;
+export const {
+  useGetAggregationsQuery,
+  useGetSetsRaritiesAndCardTypesQuery,
+  useGetCardsFromSetQuery,
+  useLazyGetCardsFromSetQuery,
+  useLazyGetAggregationsQuery,
+} = tcgPlayerApi;

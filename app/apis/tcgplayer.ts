@@ -1,5 +1,5 @@
 import React, { Dispatch } from "react";
-import { TCGPlayer } from "../../models/TCGPlayer";
+import { Aggregations, TCGPlayer } from "../../models/TCGPlayer";
 import { AppDispatch } from "../store";
 import { ActionCreatorWithPayload } from "@reduxjs/toolkit";
 
@@ -54,24 +54,26 @@ const emptyBody = {
   sort: {},
 };
 
-export const getCardTypeSetsAndRarities = () => {
-  const headers = new Headers();
-  headers.append("Accept", "application/json");
-  headers.append("Content-Type", "application/json");
+// export const getCardTypeSetsAndRarities = async (): Aggregations => {
+//   const headers = new Headers();
+//   headers.append("Accept", "application/json");
+//   headers.append("Content-Type", "application/json");
 
-  const requestOptions: RequestInit = {
-    method: "POST",
-    headers: headers,
-    body: JSON.stringify(emptyBody),
-  };
+//   const requestOptions: RequestInit = {
+//     method: "POST",
+//     headers: headers,
+//     body: JSON.stringify(emptyBody),
+//   };
 
-  fetch(`${corsProxy}${searchURL}}`, requestOptions)
-    .then((response) => response.json())
-    .then((result) => {
-      let parsedResult: TCGPlayer = result;
-      return parsedResult.results[0].aggregations;
-    });
-};
+//   let result = await fetch(`${corsProxy}${searchURL}}`, requestOptions)
+//     .then((response) => response.json())
+//     .then((result) => {
+//       let parsedResult: TCGPlayer = result;
+//       return parsedResult.results[0].aggregations;
+//     });
+
+//   return result;
+// };
 
 export const searchCards = (
   cardName: string,
@@ -111,3 +113,5 @@ export const searchCards = (
       // setSearchData(resultArray);
     });
 };
+
+export default {};

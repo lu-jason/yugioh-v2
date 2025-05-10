@@ -2,23 +2,13 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "@/app/store";
 import { CardType } from "../../models/TCGPlayer";
+import { CardsState } from "./cardSlice";
 
 export interface SearchState {
   cards: CardsState[];
   sets: CardType[];
   rarities: CardType[];
   cardtypes: CardType[];
-}
-
-// Define a type for the slice state
-export interface CardsState {
-  id: number;
-  cardName: string;
-  rarity: string;
-  setName: string;
-  price: number;
-  quantity: number;
-  number: number;
 }
 
 export const toCardsState = (rowModel: any): CardsState => {

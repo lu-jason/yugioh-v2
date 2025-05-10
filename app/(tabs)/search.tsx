@@ -6,7 +6,6 @@ import {
   TextInput,
   NativeSyntheticEvent,
   TextInputSubmitEditingEventData,
-  FlatList,
   Pressable,
   GestureResponderEvent,
   Button,
@@ -15,11 +14,10 @@ import { searchCards } from "../apis/tcgplayer";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import {
   addSearchedCards,
-  CardsState,
   selectSearchedCards,
 } from "@/features/cards/searchSlice";
-import { current } from "@reduxjs/toolkit";
-import { addCards } from "@/features/cards/cardSlice";
+import { addCards, CardsState } from "@/features/cards/cardSlice";
+import { CardList } from "@/components/CardList";
 
 export default function SearchScreen() {
   const [text, setText] = useState("effect veiler");
@@ -28,6 +26,57 @@ export default function SearchScreen() {
 
   const useDispatch = useAppDispatch();
   const searchedCards = useAppSelector(selectSearchedCards);
+
+  const increaseQuantity = (card: CardsState) => {
+    let index = selectedCards.findIndex(
+      (value) => value.number === card.number && value.rarity == card.rarity
+    );
+    if (index != -1) {
+      setSelectedCards((prevCards) =>
+        prevCards.map((card, idx) =>
+          idx == index ? { ...card, quantity: card.quantity + 1 } : card
+        )
+      );
+    } else {
+      setSelectedCards((value) => [...value, card]);
+    }
+  };
+
+  const decreaseQuantity = (card: CardsState) => {
+    let index = selectedCards.findIndex(
+      (value) => value.number === card.number && value.rarity == card.rarity
+    );
+    if (index != -1 && selectedCards[index].quantity > 0) {
+      setSelectedCards((prevCards) =>
+        prevCards.map((card, idx) => {
+          if (idx == index) {
+            card.quantity--;
+          }
+          return card;
+        })
+      );
+    } else {
+      setSelectedCards((value) => [...value, card]);
+    }
+  };
+
+  const clearQuantity = (card: CardsState) => {
+    let index = selectedCards.findIndex(
+      (value) => value.number === card.number && value.rarity == card.rarity
+    );
+    if (index != -1 && selectedCards[index].quantity > 0) {
+      setSelectedCards((prevCards) =>
+        prevCards.map((card, idx) => {
+          if (idx == index) {
+            card.quantity = 0;
+          }
+          return card;
+        })
+      );
+    } else {
+      setSelectedCards((value) => [...value, card]);
+    }
+  };
 
   const search = (
     event: NativeSyntheticEvent<TextInputSubmitEditingEventData>
@@ -91,28 +140,14 @@ export default function SearchScreen() {
         defaultValue={text}
         onSubmitEditing={(event) => search(event)}
       ></TextInput>
-      {selectedCards.length != 0 && (
-        <>
-          <Text style={styles.text}>{selectedCards.length} cards selected</Text>
-          <Button title="Add Card(s)" onPress={handleAddCards}></Button>
-        </>
-      )}
       {searchCards.length != 0 && (
-        <View
-          style={[
-            styles.cardContainer,
-            {
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: 10,
-            },
-          ]}
-        >
-          {searchedCards.map((searchedCard) => {
-            return <Item {...searchedCard} key={searchedCard.id} />;
-          })}
-        </View>
+        <CardList
+          cards={searchedCards}
+          numColumns={4}
+          clearQuantity={clearQuantity}
+          decreaseQuantity={decreaseQuantity}
+          increaseQuantity={increaseQuantity}
+        ></CardList>
       )}
     </View>
   );
@@ -122,8 +157,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#25292e",
-    justifyContent: "center",
-    alignItems: "center",
     overflowY: "auto",
   },
   searchText: {

@@ -43,6 +43,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="setSearch"
+        options={{
+          title: "Set Search",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "search" : "search-outline"}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

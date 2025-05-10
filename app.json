@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "yugioh-card-tracker",
+    "name": "Yugioh Card Tracker",
     "slug": "yugioh-card-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

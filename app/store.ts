@@ -19,6 +19,7 @@ import {
   REHYDRATE,
 } from "redux-persist";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { tcgPlayerApi } from "@/features/cards/tcgPlayerApiSlice";
 
 const persistConfig: PersistConfig<RootState> = {
   key: "root",
@@ -29,6 +30,7 @@ const persistConfig: PersistConfig<RootState> = {
 const rootReducer = combineReducers({
   cards: searchCardReducer,
   ownedCards: cardsSliceReducer,
+  [tcgPlayerApi.reducerPath]: tcgPlayerApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -40,7 +42,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }),
+    }).concat(tcgPlayerApi.middleware),
 });
 
 export const persistor = persistStore(store);
@@ -53,3 +55,5 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   unknown,
   Action<string>
 >;
+
+export default {};
